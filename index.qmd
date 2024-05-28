@@ -1,0 +1,133 @@
+---
+title: "Programming in Base R"
+format: html
+---
+
+```{r}
+# Pre-treatment blood pressure values
+pre_bp <- c(130, 128, 116, 124, 133, 134, 118, 126, 114, 127, 141, 138, 128, 140, 137, 131, 120, 128, 139, 135)
+
+# Post-treatment blood pressure values
+post_bp <- c(114, 98, 113, 99, 107, 116, 113, 111, 119, 117, 101, 119, 130, 122, 106, 106, 124, 102, 117, 113)
+
+# Assigning names to the vectors
+names(pre_bp) <- paste("Subject", 1:20, sep = "_")
+names(post_bp) <- paste("Subject", 1:20, sep = "_")
+
+# Calculating the change in blood pressure
+diff_bp <- pre_bp - post_bp
+
+# Calculating the average decrease in blood pressure
+avg_decrease <- mean(diff_bp)
+
+# Determining patients with a decrease in blood pressure
+decrease_indices <- which(diff_bp > 0)
+
+# Subsetting vector for positive changes
+positive_changes <- diff_bp[decrease_indices]
+
+# Calculating the average decrease for positive changes
+avg_positive_decrease <- mean(positive_changes)
+
+list(pre_bp, post_bp, diff_bp, avg_decrease, decrease_indices, positive_changes, avg_positive_decrease)
+
+# Creating the data frame
+bp_df <- data.frame(
+  patient = paste("Subject", 1:20, sep = "_"),
+  pre_bp = pre_bp,
+  post_bp = post_bp,
+  diff_bp = diff_bp
+)
+
+# Returning rows with negative diff_bp
+negative_diff_bp <- bp_df[bp_df$diff_bp < 0, ]
+
+# Adding a new column indicating post_bp < 120
+bp_df$below_120 <- bp_df$post_bp < 120
+
+# Displaying the data frame
+knitr::kable(bp_df)
+
+# Placebo pre-treatment and post-treatment values
+pre_placebo <- c(138, 135, 147, 117, 152, 134, 114, 121, 131, 130)
+post_placebo <- c(105, 136, 123, 130, 134, 143, 135, 139, 120, 124)
+
+# Creating the placebo data frame
+placebo_df <- data.frame(
+  patient = paste("Subject", 1:10, sep = "_"),
+  pre_bp = pre_placebo,
+  post_bp = post_placebo
+)
+placebo_df$diff_bp <- placebo_df$pre_bp - placebo_df$post_bp
+placebo_df$below_120 <- placebo_df$post_bp < 120
+
+# Creating the list
+bp_list <- list(treatment = bp_df, placebo = placebo_df)
+
+# Accessing the first list element
+bp_list$treatment
+bp_list[[1]]
+bp_list[["treatment"]]
+
+# Accessing the placebo pre_bp column
+bp_list$placebo$pre_bp
+
+# Adding status column
+bp_list$treatment$status <- character(20)
+bp_list$placebo$status <- character(10)
+
+# Creating the status column for the treatment data frame
+for (i in 1:nrow(bp_list$treatment)) {
+  if (bp_list$treatment$post_bp[i] <= 120) {
+    bp_list$treatment$status[i] <- "optimal"
+  } else if (bp_list$treatment$post_bp[i] <= 130) {
+    bp_list$treatment$status[i] <- "borderline"
+  } else {
+    bp_list$treatment$status[i] <- "high"
+  }
+}
+
+# Creating the status column for the placebo data frame
+for (i in 1:nrow(bp_list$placebo)) {
+  if (bp_list$placebo$post_bp[i] <= 120) {
+    bp_list$placebo$status[i] <- "optimal"
+  } else if (bp_list$placebo$post_bp[i] <= 130) {
+    bp_list$placebo$status[i] <- "borderline"
+  } else {
+    bp_list$placebo$status[i] <- "high"
+  }
+}
+
+# Function to calculate summary statistics
+summary_stat <- function(bp_list, stat = "mean") {
+  my_fun <- get(stat)
+  
+  stats <- c(
+    treatment_pre = my_fun(bp_list$treatment$pre_bp),
+    treatment_post = my_fun(bp_list$treatment$post_bp),
+    treatment_diff = my_fun(bp_list$treatment$diff_bp),
+    placebo_pre = my_fun(bp_list$placebo$pre_bp),
+    placebo_post = my_fun(bp_list$placebo$post_bp),
+    placebo_diff = my_fun(bp_list$placebo$diff_bp)
+  )
+  
+  names(stats) <- c(
+    paste0(stat, "_treatment_pre"),
+    paste0(stat, "_treatment_post"),
+    paste0(stat, "_treatment_diff"),
+    paste0(stat, "_placebo_pre"),
+    paste0(stat, "_placebo_post"),
+    paste0(stat, "_placebo_diff")
+  )
+  
+  return(stats)
+}
+
+# Applying the function
+summary_stat(bp_list)
+summary_stat(bp_list, "var")
+summary_stat(bp_list, "sd")
+summary_stat(bp_list, "min")
+summary_stat(bp_list, "max")
+
+```
